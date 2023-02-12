@@ -1,0 +1,107 @@
+---
+title: "HW2"
+author: "Jia Yue Gao"
+date: "2/12/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars1, include=FALSE}
+## this Chunk is for reading files
+library(readr)
+sparrows <- read_csv("/Users/jiayuegao/Desktop/Multivariate Analysis/Week 3 Sample Code/Bumpus_sparrows.csv")
+```
+
+
+```{r cars}
+# file reading is in the above chunk
+#str(sparrows)
+#boxplot(sparrows[,2:6])
+#stars(sparrows,labels = sparrows$Survivorship)
+
+attach(sparrows)
+
+# Create scatterplot matrix 
+# diagonal label
+labs.diagonal <- c("Total length","Alar extent","L. beak & head","L. humerous","L. keel & sternum")
+
+# Scatter Plot Matrix
+#install.packages("car")
+library(car)
+scatterplotMatrix(~Total_length+Alar_extent+L_beak_head+L_humerous+L_keel_sternum | Survivorship, data=sparrows, var.labels=labs.diagonal,cex.labels=0.7, diagonal="boxplot",smooth=FALSE,reg.line=FALSE,pch=c(1,16),col=rep("black",2), legend.plot=FALSE)
+
+# The diagonal value of the scatterplot matrix reveals that the distribution of several attributes is different for survived and non-survived sparrows. The differences in graph shapes are particularly noticeable for total length and L_humerous, indicating that these two attributes may be helpful when determining the sparrow's survival rate.
+
+# Also, pair-wise scatterplots reveal some information. The trendlines of survived and non-survived sparrows have different slopes for certain pairs of attributes. For example, the trend lines of survived and non-survived sparrows in the Alar-extent and L_Keel & Sternum graphs differ. This is also true for the Total_length and L_humerous and several other graphs, suggesting that the correlation between these attributes among survived and non-survived groups are different.
+
+
+
+
+
+
+
+library(ggplot2)
+
+
+# create GGPLOT to visualize correlation between attributes for survived and non-survived sparrows
+# the scatterplot matrix shows that trendlines for L_humerous&Total_length and Alar_extent&L_keel_sternum differ.
+# Use ggplot to further examine these two pairs
+ggplot(sparrows, aes(x=L_humerous, y=Total_length, color=Survivorship)) + geom_point()+geom_smooth(method="lm")
+# regression lines for both S and NS are positive have slightly different slopes
+
+
+
+ggplot(sparrows, aes(x=Alar_extent, y=L_keel_sternum, color=Survivorship)) + geom_point()+geom_smooth(method="lm")
+# regression lines for both S and NS are positive but have different slopes, indicating a difference in relationship between Alar_extent and L_keel_sternum for Survived and non-survived sparrows
+
+
+
+
+
+# create density plot and ggridges to understand distribution of attributes. Works better than histogram as it shows a smooth curve
+ggplot(sparrows, aes(x=Total_length)) + geom_density() 
+# graph for total length is right skewed
+
+
+ggplot(sparrows, aes(x=Alar_extent)) + geom_density() 
+# graph for Alar_extent has two peaks, indicating density around two separate value ranges
+
+
+ggplot(sparrows, aes(x=L_humerous)) + geom_density() 
+# graph for L_humerous is balanced
+
+
+
+# create box plot to understand the distribution and quartile information
+ggplot(sparrows, aes(x=Total_length, y=Survivorship)) + geom_boxplot()
+# compared to survived, median of Total_length for non-survived sparrows is greater 
+# compared to survived, upper quartile Q3 of Total_length for non-survived sparrows is greater.
+
+
+
+ggplot(sparrows, aes(x=Alar_extent, y=Survivorship)) + geom_boxplot()
+# compared to survived, median of Alar_extent for non-survived sparrows is greater 
+# compared to survived, upper quartile Q3 of Alar_extent for non-survived sparrows is similar.
+
+
+
+ggplot(sparrows, aes(x=L_humerous, y=Survivorship)) + geom_boxplot()
+# compared to survived, median of L_humerous for non-survived sparrows is similar. 
+# compared to survived, upper quartile Q3 of L_humerous for non-survived sparrows is greater.
+# compared to survived, lower quartile Q1 of L_humerous for non-survived sparrows is smaller.
+
+```
+
