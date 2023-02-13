@@ -43,7 +43,7 @@ labs.diagonal <- c("Total length","Alar extent","L. beak & head","L. humerous","
 library(car)
 scatterplotMatrix(~Total_length+Alar_extent+L_beak_head+L_humerous+L_keel_sternum | Survivorship, data=sparrows, var.labels=labs.diagonal,cex.labels=0.7, diagonal="boxplot",smooth=FALSE,reg.line=FALSE,pch=c(1,16),col=rep("black",2), legend.plot=FALSE)
 
-# The diagonal value of the scatterplot matrix reveals that the distribution of several attributes is different for survived and non-survived sparrows. The differences in graph shapes are particularly noticeable for total length and L_humerous, indicating that these two attributes may be helpful when determining the sparrow's survival rate.
+# The diagonal value of the scatterplot matrix reveals that the distribution of several attributes is different for survived and non-survived sparrows. The differences in graph shapes are particularly noticeable for total_length and L_humerous, indicating that these two attributes may be helpful when determining the sparrow's survival rate.
 
 # Also, pair-wise scatterplots reveal some information. The trendlines of survived and non-survived sparrows have different slopes for certain pairs of attributes. For example, the trend lines of survived and non-survived sparrows in the Alar-extent and L_Keel & Sternum graphs differ. This is also true for the Total_length and L_humerous and several other graphs, suggesting that the correlation between these attributes among survived and non-survived groups are different.
 
@@ -102,6 +102,13 @@ ggplot(sparrows, aes(x=L_humerous, y=Survivorship)) + geom_boxplot()
 # compared to survived, median of L_humerous for non-survived sparrows is similar. 
 # compared to survived, upper quartile Q3 of L_humerous for non-survived sparrows is greater.
 # compared to survived, lower quartile Q1 of L_humerous for non-survived sparrows is smaller.
+
+
+#In summary
+#from scatterplot: The differences in graph shapes are particularly noticeable for total_length and L_humerous, indicating that these two attributes may be helpful when determining the sparrow's survival rate.The trendlines of survived and non-survived sparrows have different slopes for certain pairs of attributes (Alar-extent and L_Keel & Sternum) graphs differ, suggesting that the correlation between these attributes among survived and non-survived groups are different.
+#from ggplot: regression lines for both S and NS are positive but have different slopes, indicating a difference in relationship between Alar_extent and L_keel_sternum for Survived and non-survived sparrows. From bar plots, Total_length and L_humerous have different distributions, indicating that they may be helpful in determinining S and NS sparrows.
+
+
 
 ```
 
