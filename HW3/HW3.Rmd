@@ -1,0 +1,745 @@
+---
+title: "HW3"
+author: "Jia Yue Gao"
+date: "2/24/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+## Section 1 Read Files
+dataset downloaded from https://www.kaggle.com/datasets/uciml/adult-census-income?resource=download 
+
+```{r 1}
+library(readxl)
+census <- read_excel("~/Desktop/Multivariate Analysis/HW3/CensusData.xlsx")
+str(census)
+attach(census)
+
+```
+
+## Section 2 Week2 Code
+
+Mean Var Corr
+
+```{r 2}
+#We will drop 2 column  as it does not contain a number
+census.num <- census[,-1:-2]
+# Computing the means of each variable in data frame census.num
+colMeans(census.num)
+# Covariance matrix
+cov(census.num)
+# Correlation matrix
+cor(census.num)
+
+
+# income >50K for higher incomes, and <=50K for lower incomes
+census_h <- census[(census$income == ">50K"),]
+census_l <- census[(census$income == "<=50K"),]
+
+
+#drop column 2 for both datasets as they does not contain a number
+census_h.num <- census_h[,-1:-2]
+census_l.num <- census_l[,-1:-2]
+
+# calculate column means for both datasets
+colMeans(census_h.num)
+colMeans(census_l.num)
+
+# calculate the following for both datasets:Variance
+var(census_h.num)
+var(census_l.num)
+
+# calculate the following for both datasets:Covariance matrix
+cov(census_h.num)
+cov(census_l.num) 
+
+# calculate the following for both datasets: Correlation matrix
+cor(census_h.num)
+cor(census_l.num)
+```
+Restuls show that:
+1. for higher income group: 
+  average age is higher (44.25)
+  average years of education is higher (11.6)
+  average cap_gain is higher
+  average hour of work per week is higher (45.5)
+  variance in age is lower
+  variance in cap gain is higher
+  variance in hour of work per week is lower (121)
+  edu_num is positively correlated with cap_gain
+  edu_num is positively correlated with hr_week
+  cap_gain is positively correlated with hr_week
+2. for lower income group: 
+  average age is lower (36.78)
+  average years of education is lower (9.6)
+  average cap_gain is lower
+  average hour of work per week is lower (38.8)
+  variance in age is higher
+  variance in cap gain is lower
+  variance in hour of work per week is higher (152)
+  edu_num is positively correlated with cap_gain
+  edu_num is positively correlated with hr_week
+  cap_gain is positively correlated with hr_week
+
+## Section 3 Week3 Code
+MVA_Visualization
+run with a smaller dataset. (otherwise visualization takes too long to run)
+```{r 3} 
+census <- census[1:200,]
+boxplot(census[,3:6])
+#stars(census,labels = census$income)
+#skip stars for now since some data points have very high cap_gain
+
+# Dive Deeper into Visualization Techniques
+attach(census)
+
+#Plots
+census.profile <- data.frame(as.numeric(rownames(census)),census[,3:6])
+census.profile <- census[,3:6]
+
+# diagonal label
+labs.diagonal <- c("age","edu_num","cap_gain","hr_week")
+plot(age, hr_week,xlab="age",ylab="hr_week",pch=c(16,1))
+
+# Correlations
+pairs(census[,3:6])
+
+# A Different View on Correlation Matrix
+library(SciViews)
+pairs(census[,3:6], diag.panel = panel.boxplot, labels=labs.diagonal,pch=c(1,16),font.labels=2)
+
+# 3 Dimensional Plots
+#install.packages("scatterplot3d")
+library(scatterplot3d)
+s3d <- scatterplot3d(age,edu_num,hr_week,pch=c(1,16)[as.numeric(income)],xlab="age", ylab="edu_num", angle=45,zlab="hr_week", lty.hide=2,type="h",y.margin.add=0.1,font.axis=2,font.lab=2)
+legend(s3d$xyz.convert(238, 160, 34.1),c("<=50k",">50k"),pch=c(1,16),text.font=2)
+
+# Scatter Plot Matrix
+#install.packages("car")
+library(car)
+scatterplotMatrix(~age+edu_num+cap_gain+hr_week | income, data=census[,3:6], var.labels=labs.diagonal,cex.labels=0.7, diagonal="boxplot",smooth=FALSE,reg.line=FALSE,pch=c(1,16),col=rep("black",2), legend.plot=FALSE)
+
+library(lattice)
+super.sym <- trellis.par.get("superpose.symbol")
+super.sym$superpose.symbol$pch <- c(1,16,rep(1,5))
+super.sym$superpose.symbol$col <- rep("#000000",7)
+trellis.par.set(super.sym)
+splom(~census.profile, groups = income, data = census.profile, ps=0.5, varname.cex = .5,panel = panel.superpose,key = list(columns = 2,points = list(pch = super.sym$pch[1:2], col=super.sym$col[1:2]),text = list(c(">50k", "<=50k"))))
+
+library(GGally)
+ggscatmat(census, columns=3:6, color="income")
+detach(census)
+
+# remove.packages(c("ggplot2", "data.table"))
+# install.packages('Rcpp', dependencies = TRUE)
+# install.packages('ggplot2', dependencies = TRUE)
+# install.packages('data.table', dependencies = TRUE)
+
+# load packages
+library(lattice)
+library(ggplot2)
+library(ggridges)
+library(ggvis)
+library(ggthemes)
+library(cowplot)
+library(gapminder)
+library(gganimate)
+library(dplyr)
+library(tidyverse)
+library(grid)
+library(gridExtra)
+library(RColorBrewer)
+
+# Using Census Data
+data(census)
+attach(census)
+
+# base R
+plot(edu_num~age)
+abline(lm(edu_num~age), col="red")
+
+plot(hr_week~age, col="steelblue", pch=3, main="Census Data", xlab="age", 
+     ylab="hours of work per week", xlim=c(0,100))
+xyplot(hr_week~age)
+xyplot(hr_week~age | income)
+xyplot(hr_week~age, groups=income)
+xyplot(hr_week~age | income + sex)
+xyplot(hr_week~age | income , groups=sex, auto.key=list(space="right"))
+xyplot(hr_week~age, col="steelblue", pch=3, main="Censu Data", xlab="age", 
+       ylab="hours of work per week", xlim=c(0,100), scales=list(tick.number=10))
+
+# ggplot
+ggplot(census, aes(x=age,y=hr_week)) + geom_point()
+#ggplot(census, aes(x=age,y=edu_num)) + facet_wrap(sex) + geom_point()
+ggplot(census, aes(x=age,y=hr_week)) + geom_point(aes(color=income))
+
+ggplot(census, aes(x=age,y=hr_week))  + xlim(0,100) + geom_point(colour="steelblue", pch=3) + 
+  labs(x="age", y="hours of work per week", title="Census Data") 
+
+# bar chart
+ggplot(census, aes(income)) + geom_bar(position="stack") 
+ggplot(census, aes(sex) )+ geom_bar(position="stack") 
+ggplot(census, aes(income)) + facet_grid(.~sex) + geom_bar(position="dodge")
+
+# histogram
+ggplot(census, aes(age))+geom_histogram()
+ggplot(census, aes(age))+geom_histogram(aes(fill = after_stat(count)))
+
+# regression
+ggplot(census, aes(x=age, y=hr_week)) + geom_point() + geom_smooth(method=lm)
+ggplot(census, aes(x=age, y=hr_week)) + geom_point() + stat_smooth()
+#ggplot(mtcars, aes(x=mpg, y=disp)) + geom_point() + stat_smooth()
+# we can also plot customized confidence interval bands, but this requires computing them separately [see ggplot2 help]
+
+# violin plot 
+ggplot(census, aes(x=age, y=hr_week)) + geom_violin()
+ggplot(census, aes(x=edu_num, y=hr_week)) + geom_violin()
+ggplot(census, aes(x=cap_gain, y=hr_week)) + geom_violin()
+
+# box plot
+ggplot(census, aes(x=age, y=hr_week)) + geom_boxplot()
+ggplot(census, aes(x=age, y=hr_week)) + geom_boxplot() + coord_flip()
+
+# density plot and ggridges
+ggplot(census, aes(x=age)) + geom_density() 
+ggplot(census, aes(x=age, fill=income, color=income)) + geom_density() 
+ggplot(census, aes(x=age, fill=sex, color=sex)) + geom_density(alpha=0.3, aes(y=..scaled..)) 
+
+# hexbin
+#ggplot(census, aes(x=age, y=hr_week)) + geom_hex() 
+
+# with ggthemes (see also ggsci, ggthemr)
+lastplot <- ggplot(census, aes(x=age,y=hr_week)) + xlim(0,100) + geom_point(aes(color=income)) + stat_smooth() + 
+  labs(x="age", y="work week", title="Census Data") 
+
+lastplot + theme_bw()
+lastplot + theme_cowplot()
+lastplot + theme_dark()
+lastplot + theme_economist()
+lastplot + theme_fivethirtyeight()
+lastplot + theme_tufte()
+lastplot + theme_wsj()
+
+# for more information see
+# ggplot docs at https://ggplot2.tidyverse.org/
+# ggplot extensions at https://exts.ggplot2.tidyverse.org/
+# ggplot2 book (via link.springer.com)
+```
+
+## Section 4 Week4 Code
+distance
+```{r 4}
+attach(census)
+str(census)
+census$income <- as.factor(census$income)
+census$sex <- as.factor(census$sex)
+census_x <- census[, 3:6]
+census_x
+census_cm <- colMeans(census_x)
+census_S <- cov(census_x)
+# equation for distance
+census_d <- apply(census_x, MARGIN = 1, function(census_x)t(census_x - census_cm) %*% solve(census_S) %*% (census_x - census_cm))
+census_cm
+census_S
+census_d
+
+# t-tests, one by one. >50K vs. <=50K
+with(data=census,t.test(age[income==">50K"],age[income=="<=50K"],var.equal=TRUE))
+#p significant
+with(data=census,t.test(edu_num[income==">50K"],edu_num[income=="<=50K"],var.equal=TRUE))
+# p significant
+with(data=census,t.test(cap_gain[income==">50K"],cap_gain[income=="<=50K"],var.equal=TRUE))
+# p significant
+with(data=census,t.test(hr_week[income==">50K"],hr_week[income=="<=50K"],var.equal=TRUE))
+# p significant
+
+library(Hotelling)
+t2testcensus <- hotelling.test(age + edu_num + cap_gain + hr_week ~ income, data=census)
+# Output of the function hotelling.test is given
+cat("T2 statistic =",t2testcensus$stat[[1]],"\n")
+print(t2testcensus)
+# P value is significant
+
+#  T2 statistic is located in the first element of the list "stat"
+
+# testing Variation
+# F-test for Total length (not recommended)
+var.test(edu_num[income==">50K"],edu_num[income=="<=50K"])
+#attach(census)
+var.test(hr_week[income==">50K"],hr_week[income=="<=50K"])
+
+# Levene's tests based on absolute differences around means using t-tests. Standarizing the census data set with scale()
+
+matstand <- scale(census[,3:6])
+matstand
+math <- matstand[income==">50K",]
+matl <- matstand[income=="<=50K",]
+vecmedianh <- apply(math, 2, median)
+# in the above 2 represents column. Hence, we are asking for column median
+vecmedianh
+vecmedianl <- apply(matl, 2, median)
+
+matabsdevh <- abs(math - matrix(rep(vecmedianh,nrow(math)),nrow=nrow(math), byrow=TRUE))
+matabsdevl <- abs(matl - matrix(rep(vecmedianl,nrow(matl)),nrow=nrow(matl), byrow=TRUE))
+
+matabsdevl
+
+matabsdev.all <- rbind(matabsdevh,matabsdevl)
+matabsdev.all <- data.frame(income, matabsdev.all)
+
+t.test(matabsdev.all$age[income==">50K"],matabsdev.all$age[income=="<=50K"], alternative="less",var.equal = TRUE)
+
+t.test(matabsdev.all$edu_num[income==">50K"],matabsdev.all$edu_num[income=="<=50K"], alternative="less",var.equal = TRUE)
+
+t.test(matabsdev.all$cap_gain[income==">50K"],matabsdev.all$cap_gain[income=="<=50K"], alternative="less",var.equal = TRUE)
+
+t.test(matabsdev.all$hr_week[income==">50K"],matabsdev.all$hr_week[income=="<=50K"], alternative="less",var.equal = TRUE)
+
+#p-value not significant
+
+matstand
+
+matstand.all <- data.frame(income, matstand)
+colnames(matstand.all) <- c("income", colnames(census[3:6]))
+t2testcensus <- hotelling.test(age+edu_num+cap_gain+hr_week ~ income,data=matstand.all)
+cat("T2 statistic =",t2testcensus$stat[[1]],"\n")
+print(t2testcensus)
+# the result is significant
+
+# In the above we standardized using scale function
+matabsdev.all
+
+# We can also look at Van Valen's test. Equivalent to the comparison of mean absolute median
+# diferences between two groups. In the census' example, the Van Valen's test
+# is one-sided (Mean dij for survivors < Mean dij for non-survivors)
+# dij is the norm of the individual vector i composed by the absolute
+# deviations computed for all the variables in sample j.
+# These norms define the second column of the data frame d.all
+
+d.all <- data.frame(income,sqrt(rowSums(matabsdev.all[,-1]^2)))
+d.all
+colnames(d.all)[2] <- "dij"
+d.all
+head(d.all)
+with(d.all, t.test(dij[income==">50K"], dij[income=="<=50K"],var.equal=TRUE, alternative="less"))
+sprintf("d-values for Survivors: Mean = %2.3f, Variance = %2.3f",mean(d.all$dij[income==">50K"]),var(d.all$dij[income==">50K"]))
+sprintf("d-values for Non-survivors: Mean = %2.3f, Variance = %2.3f",mean(d.all$dij[income=="<=50K"]),var(d.all$dij[income=="<=50K"]))
+# Hotelling Test
+
+
+# Leverne test is used to verify Homoscedasticity. It tests if the variance of two samples are # #equal. Levene's test is an inferential statistic used to assess the equality of variances for a #variable calculated for two or more groups.[1] Some common statistical procedures assume that #variances of the populations from which different samples are drawn are equal. Levene's test #assesses this assumption.
+
+library(car)
+leveneTest(age ~ income, data=census)
+# results are significant
+#leveneTest() produces a two-sided test
+leveneTest(edu_num ~ income, data=census)
+leveneTest(cap_gain ~ income, data=census)
+# results are significant
+leveneTest(hr_week ~ income, data=census)
+
+
+# ANOVA
+summary(aov(age ~ income))
+summary(aov(edu_num ~ income))
+summary(aov(cap_gain ~ income))
+summary(aov(hr_week ~ income))
+# results are significant. These factors contribute to the binary variable of income level (>50K or <=50K)
+
+# mahalanobis
+library(stats)
+
+census_MD <- mahalanobis(census_x, census_cm, census_S)
+census_MD
+census$pvalues <- pchisq(census_MD, df=3, lower.tail=FALSE)
+# find outliers that have pvalues <0.05
+census
+
+# BoxM
+
+library(biotools)
+boxM(census[,3:6],income)
+
+# MANOVA
+summary(manova(as.matrix(census[,-1:-2])~ income))
+# results are significant
+census <- census[,-7]
+```
+## Section 5 Week5 Code
+PCA
+```{r 5}
+#Get the Correlations between the measurements
+cor(census[-1:-2])
+# Using prcomp to compute the principal components (eigenvalues and eigenvectors). With scale=TRUE, variable means are set to zero, and variances set to one
+census_pca <- prcomp(census[,-1:-2],scale=TRUE)
+census_pca
+summary(census_pca)
+# sample scores stored in census_pca$x
+# singular values (square roots of eigenvalues) stored in censusow_pca$sdev
+# loadings (eigenvectors) are stored in census_pca$rotation
+# variable means stored in census_pca$center
+# variable standard deviations stored in census_pca$scale
+# A table containing eigenvalues and %'s accounted, follows
+# Eigenvalues are sdev^2
+(eigen_census <- census_pca$sdev^2)
+names(eigen_census) <- paste("PC",1:4,sep="")
+eigen_census
+sumlambdas <- sum(eigen_census)
+sumlambdas
+propvar <- eigen_census/sumlambdas
+propvar
+cumvar_census <- cumsum(propvar)
+cumvar_census
+matlambdas <- rbind(eigen_census,propvar,cumvar_census)
+rownames(matlambdas) <- c("Eigenvalues","Prop. variance","Cum. prop. variance")
+round(matlambdas,4)
+summary(census_pca)
+census_pca$rotation
+print(census_pca)
+## Sample scores stored in censusow_pca$x
+census_pca$x
+# Identifying the scores by their income status
+censustyp_pca <- cbind(data.frame(income),census_pca$x)
+censustyp_pca
+# Means of scores for all the PC's classified by income status
+tabmeansPC <- aggregate(censustyp_pca[,2:5],by=list(income=census$income),mean)
+tabmeansPC
+tabmeansPC <- tabmeansPC[rev(order(tabmeansPC$income)),]
+tabmeansPC
+tabfmeans <- t(tabmeansPC[,-1])
+tabfmeans
+colnames(tabfmeans) <- t(as.vector(tabmeansPC[1]$income))
+tabfmeans
+# Standard deviations of scores for all the PC's classified by income status
+tabsdsPC <- aggregate(censustyp_pca[,2:5],by=list(income=census$income),sd)
+tabfsds <- t(tabsdsPC[,-1])
+colnames(tabfsds) <- t(as.vector(tabsdsPC[1]$income))
+tabfsds
+t.test(PC1~census$income,data=censustyp_pca)
+t.test(PC2~census$income,data=censustyp_pca)
+t.test(PC3~census$income,data=censustyp_pca)
+t.test(PC4~census$income,data=censustyp_pca)
+
+## F ratio tests
+var.test(PC1~census$income,data=censustyp_pca)
+var.test(PC2~census$income,data=censustyp_pca)
+var.test(PC3~census$income,data=censustyp_pca)
+var.test(PC4~census$income,data=censustyp_pca)
+
+# Levene's tests (one-sided)
+library(car)
+(LTPC1 <- leveneTest(PC1~census$income,data=censustyp_pca))
+(p_PC1_1sided <- LTPC1[[3]][1]/2)
+(LTPC2 <- leveneTest(PC2~census$income,data=censustyp_pca))
+(p_PC2_1sided=LTPC2[[3]][1]/2)
+(LTPC3 <- leveneTest(PC3~census$income,data=censustyp_pca))
+(p_PC3_1sided <- LTPC3[[3]][1]/2)
+(LTPC4 <- leveneTest(PC4~census$income,data=censustyp_pca))
+(p_PC4_1sided <- LTPC4[[3]][1]/2)
+# Plotting the scores for the first and second components
+plot(censustyp_pca$PC1, censustyp_pca$PC2,pch=ifelse(censustyp_pca$income == "S",1,16),xlab="PC1", ylab="PC2", main="49 census against values for PC1 & PC2")
+abline(h=0)
+abline(v=0)
+legend("bottomleft", legend=c(">50K","<=50K"), pch=c(1,16))
+plot(eigen_census, xlab = "Component number", ylab = "Component variance", type = "l", main = "Scree diagram")
+# some rules of choosing PC
+# 1 rule is go for 70% or higher
+# 2 rule is look at Scree diagram and find elbow
+# in this case, choose 3
+plot(log(eigen_census), xlab = "Component number",ylab = "log(Component variance)", type="l",main = "Log(eigenvalue) diagram")
+print(summary(census_pca))
+diag(cov(census_pca$x))
+xlim <- range(census_pca$x[,1])
+census_pca$x[,1]
+census_pca$x
+plot(census_pca$x,xlim=xlim,ylim=xlim)
+census_pca$rotation[,1]
+census_pca$rotation
+plot(census[,-1])
+census_pca$x
+plot(census_pca)
+#get the original value of the data based on PCA
+center <- census_pca$center
+scale <- census_pca$scale
+new_censusow <- as.matrix(census[,-1:-2])
+new_censusow
+drop(scale(new_censusow,center=center, scale=scale)%*%census_pca$rotation[,1])
+predict(census_pca)[,1]
+#The aboved two gives us the same thing. predict is a good function to know.
+census$income <- as.factor(census$income)
+out <- sapply(1:4, function(i){plot(census$income,census_pca$x[,i],xlab=paste("PC",i,sep=""),ylab="income")})
+pairs(census_pca$x[,1:4], ylim = c(-6,4),xlim = c(-6,4),panel=function(x,y,...){text(x,y,census$income)})
+
+# Better Ways to Visualize
+
+library(factoextra)
+library(FactoMineR)
+library(ggfortify)
+library(psych)
+library(corrplot)
+library(devtools)
+
+# Correlation
+pairs.panels(census[,-1:-2],
+             gap = 0,
+             bg = c("red", "blue")[census$income],
+             pch=21)
+
+pairs.panels(census_pca$x,
+             gap=0,
+             bg = c("red", "blue")[census$income],
+             pch=21)
+
+
+
+
+fviz_eig(census_pca, addlabels = TRUE)
+fviz_pca_var(census_pca,col.var = "cos2",
+             gradient.cols = c("#FFCC00", "#CC9933", "#660033", "#330033"),
+             repel = TRUE)
+fviz_pca_ind(census_pca, col.ind = "cos2", 
+                  gradient.cols = c("#FFCC00", "#CC9933", "#660033", "#330033"), 
+                  repel = TRUE)
+biplot(census_pca)
+autoplot(census_pca,
+         data = census[,-1],
+         loadings = TRUE,
+         labels = census$income)
+
+# Different PCA Method. 
+res.pca <- PCA(census[,-1:-2], graph = FALSE)
+print(res.pca)
+
+# Visualize and Interpret PCA using these functions 
+
+#get_eigenvalue(res.pca): Extract the eigenvalues/variances of principal components
+#fviz_eig(res.pca): Visualize the eigenvalues
+#get_pca_ind(res.pca), get_pca_var(res.pca): Extract the results for individuals and variables, respectively.
+#fviz_pca_ind(res.pca), fviz_pca_var(res.pca): Visualize the results individuals and variables, respectively.
+#fviz_pca_biplot(res.pca): Make a biplot of individuals and variables.
+
+eig.val <- get_eigenvalue(res.pca)
+eig.val
+
+fviz_eig(res.pca, addlabels = TRUE, ylim = c(0, 50))
+
+var <- get_pca_var(res.pca)
+#var$coord: coordinates of variables to create a scatter plot
+#var$cos2: represents the quality of representation for variables on the factor map. It’s calculated as the squared coordinates: var.cos2 = var.coord * var.coord.
+#var$contrib: contains the contributions (in percentage) of the variables to the principal components. 
+#The contribution of a variable (var) to a given principal component is (in percentage) : (var.cos2 * 100) / (total cos2 of the component).
+var
+
+# Coordinates
+head(var$coord)
+# Cos2: quality on the factore map
+head(var$cos2)
+# Contributions to the principal components
+head(var$contrib)
+
+#The plot Below is also known as variable correlation plots. It shows the relationships between all variables. It can be interpreted as follow:
+
+#Positively correlated variables are grouped together.
+#Negatively correlated variables are positioned on opposite sides of the plot origin (opposed quadrants).
+#The distance between variables and the origin measures the quality of the variables on the factor map. 
+#Variables that are away from the origin are well represented on the factor map.
+
+# Correlation circle
+fviz_pca_var(res.pca, col.var = "black")
+
+# Quality of representation
+
+
+corrplot(var$cos2, is.corr=FALSE)
+# Total cos2 of variables on Dim.1 and Dim.2
+#A high cos2 indicates a good representation of the variable on the principal component. 
+#In this case the variable is positioned close to the circumference of the correlation circle.
+#A low cos2 indicates that the variable is not perfectly represented by the PCs. 
+
+fviz_cos2(res.pca, choice = "var", axes = 1:2)
+fviz_pca_var(res.pca, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE # Avoid text overlapping
+             )
+# Change the transparency by cos2 values
+fviz_pca_var(res.pca, alpha.var = "cos2")
+corrplot(var$contrib, is.corr=FALSE)
+# Contributions of variables to PC1
+fviz_contrib(res.pca, choice = "var", axes = 1, top = 10)
+# Contributions of variables to PC2
+fviz_contrib(res.pca, choice = "var", axes = 2, top = 10)
+fviz_pca_var(res.pca, col.var = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07")
+             )
+fviz_pca_var(res.pca, alpha.var = "contrib")
+
+fviz_pca_ind(res.pca,
+             geom.ind = "point", # show points only (nbut not "text")
+             col.ind = census$income, # color by groups
+             palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+             addEllipses = TRUE, # Concentration ellipses
+             legend.title = "Groups"
+             )
+
+
+# Description of PC
+
+res.desc <- dimdesc(res.pca, axes = c(1,2,3,4), proba = 0.05)
+# Description of dimension 1
+res.desc$Dim.1
+res.desc$Dim.2
+res.desc$Dim.3
+res.desc$Dim.4
+
+
+# Graph of Indiviuals
+ind <- get_pca_ind(res.pca)
+ind
+
+## Principal Component Analysis Results for individuals
+##  ===================================================
+##   Name       Description                       
+## 1 "$coord"   "Coordinates for the individuals" 
+## 2 "$cos2"    "Cos2 for the individuals"        
+## 3 "$contrib" "contributions of the individuals"
+#To get access to the different components, use this:
+
+# Coordinates of individuals
+head(ind$coord)
+# Quality of individuals
+head(ind$cos2)
+# Contributions of individuals
+head(ind$contrib)
+
+fviz_pca_ind(res.pca)
+
+fviz_pca_ind(res.pca, col.ind = "cos2", 
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE # Avoid text overlapping (slow if many points)
+             )
+fviz_pca_ind(res.pca, pointsize = "cos2", 
+             pointshape = 21, fill = "#E7B800",
+             repel = TRUE # Avoid text overlapping (slow if many points)
+             )
+
+fviz_pca_ind(res.pca, col.ind = "cos2", pointsize = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE # Avoid text overlapping (slow if many points)
+             )
+fviz_cos2(res.pca, choice = "ind")
+# Total contribution on PC1 and PC2
+fviz_contrib(res.pca, choice = "ind", axes = 1:2)
+
+# Create a random continuous variable of length 23,
+# Same length as the number of active individuals in the PCA
+set.seed(123)
+my.cont.var <- rnorm(49)
+# Color individuals by the continuous variable
+# fviz_pca_ind(res.pca, col.ind = my.cont.var,
+#              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+#              legend.title = "Cont.Var")
+
+fviz_pca_ind(res.pca,
+             geom.ind = "point", # show points only (nbut not "text")
+             col.ind = census$income, # color by groups
+             palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+             addEllipses = TRUE, # Concentration ellipses
+             legend.title = "Groups"
+             )
+
+fviz_pca_ind(res.pca, geom.ind = "point", col.ind = census$income, 
+             palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+             addEllipses = TRUE, ellipse.type = "confidence",
+             legend.title = "Groups"
+             )
+fviz_pca_ind(res.pca,
+             label = "none", # hide individual labels
+             habillage = census$income, # color by groups
+             addEllipses = TRUE, # Concentration ellipses
+             palette = "jco"
+             )
+fviz_pca_var(res.pca, geom.var = c("point", "text"))
+# Show individuals text labels only
+fviz_pca_ind(res.pca, geom.ind =  "text")
+# Change the size of arrows an labels
+fviz_pca_var(res.pca, arrowsize = 1, labelsize = 5, 
+             repel = TRUE)
+# Change points size, shape and fill color
+# Change labelsize
+fviz_pca_ind(res.pca, 
+             pointsize = 3, pointshape = 21, fill = "lightblue",
+             labelsize = 5, repel = TRUE)
+
+fviz_pca_ind(res.pca,
+             geom.ind = "point", # show points only (but not "text")
+             group.ind = census$income, # color by groups
+             legend.title = "Groups",
+             mean.point = FALSE)
+fviz_pca_ind(res.pca,
+             geom.ind = "point", # show points only (but not "text")
+             group.ind = census$income, # color by groups
+             legend.title = "Groups",
+             mean.point = TRUE)
+fviz_pca_var(res.pca, axes.linetype = "blank")
+
+
+
+ind.p <- fviz_pca_ind(res.pca, geom = "point", col.ind = census$income)
+ggpubr::ggpar(ind.p,
+              title = "Principal Component Analysis",
+              xlab = "PC1", ylab = "PC2",
+              legend.title = "income", legend.position = "top",
+              ggtheme = theme_gray(), palette = "jco"
+              )
+
+fviz_pca_biplot(res.pca, repel = TRUE,col.ind = census$income,
+                col.var = "#2E9FDF", # Variables color
+                )
+
+fviz_pca_biplot(res.pca, 
+                col.ind = census$income, palette = "jco", 
+                addEllipses = TRUE, label = "var",
+                col.var = "black", repel = TRUE,
+                legend.title = "income") 
+
+fviz_pca_biplot(res.pca, 
+                # Fill individuals by groups
+                geom.ind = "point",
+                pointshape = 21,
+                pointsize = 2.5,
+                fill.ind = census$income,
+                col.ind = "black",
+                # Color variable by groups
+                legend.title = list(fill = "income", color = "Clusters"),
+                repel = TRUE        # Avoid label overplotting
+             )+
+  ggpubr::fill_palette("jco")+      # Indiviual fill color
+  ggpubr::color_palette("npg")      # Variable colors
+
+fviz_pca_biplot(res.pca, 
+                # Individuals
+                geom.ind = "point",
+                fill.ind = census$income, col.ind = "black",
+                pointshape = 21, pointsize = 2,
+                palette = "jco",
+                addEllipses = TRUE,
+                # Variables
+                alpha.var ="contrib", col.var = "contrib",
+                gradient.cols = "RdYlBu",
+                
+                legend.title = list(fill = "income", color = "Contrib",
+                                    alpha = "Contrib")
+                )
+
+## http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/112-pca-principal-component-analysis-essentials/
+```
+
