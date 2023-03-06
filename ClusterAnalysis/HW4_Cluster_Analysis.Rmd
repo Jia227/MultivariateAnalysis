@@ -1,0 +1,196 @@
+---
+title: "Cluster_Analysis"
+author: "Jia Yue Gao"
+date: "2/21/2023"
+output: html_document
+---
+
+```{r}
+# code adopted from class notes
+# dataset downloaded from #https://www.kaggle.com/datasets/uciml/adult-census-income?resource=download 
+library(cluster)
+library(readr)
+library(factoextra)
+library(magrittr)
+library(NbClust)
+
+# Read data
+census <- read.csv("~/Desktop/Multivariate Analysis/HW4/CensusData.csv",header=TRUE,row.names=1)
+attach(census)
+dim(census)
+str(census)
+census$income <- as.factor(census$income)
+census$sex <- as.factor(census$sex)
+str(census)
+
+# Hirerarchic cluster analysis, Nearest-neighbor
+
+# Standardizing the data with scale()
+matstd.census <- scale(census[,3:6])
+# Creating a (Euclidean) distance matrix of the standardized data
+dist.census <- dist(matstd.census, method="euclidean")
+# Invoking hclust command (cluster analysis by single linkage method)
+cluscensus.nn <- hclust(dist.census, method = "single")
+
+#cluster everyone into 3 clusters
+cutree(cluscensus.nn,3)
+#cluster everyone into 2 clusters
+cutree(cluscensus.nn,2)
+
+plot(as.dendrogram(cluscensus.nn),ylab="Distance between countries",ylim=c(0,6),
+     main="Dendrogram. People employed in nine industry groups \n  from European countries")
+
+plot(as.dendrogram(cluscensus.nn), xlab= "Distance between countries", xlim=c(6,0),
+     horiz = TRUE,main="Dendrogram. People employed in nine industry groups from European countries")
+
+# We will use agnes function as it allows us to select option for data standardization, the distance measure and clustering algorithm in one single function
+
+(agn.census <- agnes(census, metric="euclidean", stand=TRUE, method = "single"))
+#View(agn.employ)
+
+#  Description of cluster merging
+agn.census$merge
+
+#Dendogram
+plot(as.dendrogram(agn.census), xlab= "Distance between Countries",xlim=c(8,0),
+     horiz = TRUE,main="Dendrogram \n basic people profiles in census data")
+
+#Interactive Plots
+#plot(agn.employ,ask=TRUE)
+plot(agn.census, which.plots=1)
+plot(agn.census, which.plots=2)
+plot(agn.census, which.plots=3)
+
+# K-Means Clustering
+
+matstd.census <- scale(census[,3:6])
+# K-means, k=2, 3, 4, 5, 6
+# Centers (k's) are numbers thus, 10 random sets are chosen
+
+(kmeans2.census <- kmeans(matstd.census,2,nstart = 10))
+# Computing the percentage of variation accounted for. Two clusters
+perc.var.2 <- round(100*(1 - kmeans2.census$betweenss/kmeans2.census$totss),1)
+names(perc.var.2) <- "Perc. 2 clus"
+perc.var.2
+
+# Computing the percentage of variation accounted for. Three clusters
+(kmeans3.census <- kmeans(matstd.census,3,nstart = 10))
+perc.var.3 <- round(100*(1 - kmeans3.census$betweenss/kmeans3.census$totss),1)
+names(perc.var.3) <- "Perc. 3 clus"
+perc.var.3
+
+# Computing the percentage of variation accounted for. Four clusters
+(kmeans4.census <- kmeans(matstd.census,4,nstart = 10))
+perc.var.4 <- round(100*(1 - kmeans4.census$betweenss/kmeans4.census$totss),1)
+names(perc.var.4) <- "Perc. 4 clus"
+perc.var.4
+
+# Computing the percentage of variation accounted for. Five clusters
+(kmeans5.census <- kmeans(matstd.census,5,nstart = 10))
+perc.var.5 <- round(100*(1 - kmeans5.census$betweenss/kmeans5.census$totss),1)
+names(perc.var.5) <- "Perc. 5 clus"
+perc.var.5
+(kmeans6.census <- kmeans(matstd.census,6,nstart = 10))
+
+# Computing the percentage of variation accounted for. Six clusters
+perc.var.6 <- round(100*(1 - kmeans6.census$betweenss/kmeans6.census$totss),1)
+names(perc.var.6) <- "Perc. 6 clus"
+perc.var.6
+attributes(perc.var.6)
+Variance_List <- c(perc.var.2,perc.var.3,perc.var.4,perc.var.5,perc.var.6)
+
+Variance_List
+plot(Variance_List)
+# this step is show that the perc.variation is going down
+
+#
+# Saving four k-means clusters in a list
+clus1 <- matrix(names(kmeans4.census$cluster[kmeans4.census$cluster == 1]), 
+                ncol=1, nrow=length(kmeans4.census$cluster[kmeans4.census$cluster == 1]))
+colnames(clus1) <- "Cluster 1"
+clus2 <- matrix(names(kmeans4.census$cluster[kmeans4.census$cluster == 2]), 
+                ncol=1, nrow=length(kmeans4.census$cluster[kmeans4.census$cluster == 2]))
+colnames(clus2) <- "Cluster 2"
+clus3 <- matrix(names(kmeans4.census$cluster[kmeans4.census$cluster == 3]), 
+                ncol=1, nrow=length(kmeans4.census$cluster[kmeans4.census$cluster == 3]))
+colnames(clus3) <- "Cluster 3"
+clus4 <- matrix(names(kmeans4.census$cluster[kmeans4.census$cluster == 4]), 
+                ncol=1, nrow=length(kmeans4.census$cluster[kmeans4.census$cluster == 4]))
+colnames(clus4) <- "Cluster 4"
+list(clus1,clus2,clus3,clus4)
+detach(census)
+
+
+#*******************************************************************#
+# gg Visualizations with new Dataset
+#*******************************************************************#
+
+
+
+my_data <- census[,3:6]%>% na.omit() %>% scale()        
+
+# View the firt 3 rows
+head(my_data, n = 3)
+
+cen.dist <- get_dist(my_data, stand = TRUE, method = "pearson")
+
+# Understand the Distance Between People Profile
+fviz_dist(cen.dist, 
+          gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
+
+# Lets Try to Find the Optimal Distance
+fviz_nbclust(my_data, kmeans, method = "gap_stat")
+
+set.seed(123)
+km.cen <- kmeans(my_data, 3, nstart = 25)
+# Visualize
+fviz_cluster(km.cen, data = my_data,
+             ellipse.type = "convex",
+             palette = "jco",
+             ggtheme = theme_minimal())
+# clusters have some overlap here. One possible solution is to
+# remove some variables that are used to construct distance
+
+# If your data has outliears , use PAM method
+pam.cen <- pam(my_data, 3)
+# Visualize
+fviz_cluster(pam.cen)
+
+# Hierarchial Clusiering
+cen.hc <- my_data %>% scale() %>% dist(method = "euclidean") %>%
+  hclust(method = "ward.D2")
+
+fviz_dend(cen.hc, k = 4, # Cut in four groups
+          cex = 0.5, # label size
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          color_labels_by_k = TRUE, # color labels by groups
+          rect = TRUE # Add rectangle around groups
+)
+# Lets see what the optimal numbers of clusers are
+# Compute
+cen.nbclust <- my_data %>% scale() %>% NbClust(distance = "euclidean", min.nc = 2, max.nc = 10, method = "complete", index ="all") 
+
+# Visualize
+#fviz_nbclust(cen.nbclust, ggtheme = theme_minimal())
+
+# Quality of Clustering
+set.seed(123)
+
+# Visualize with factoextra
+fviz_dend(cen.hc, palette = "jco",
+          rect = TRUE, show_labels = FALSE)
+
+#Inspect the silhouette plot:
+#fviz_silhouette(cen.hc)
+
+# Silhouette width of observations
+sil <- cen.hc$silinfo$widths[, 1:3]
+
+# Objects with negative silhouette
+neg_sil_index <- which(sil[, 'sil_width'] < 0)
+sil[neg_sil_index, , drop = FALSE]
+
+
+# Reference https://www.datanovia.com/en/blog/types-of-clustering-methods-overview-and-quick-start-r-code/
+
+```
